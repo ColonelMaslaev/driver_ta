@@ -13,12 +13,16 @@ Docker PostGIS container can be created and started with:
 docker run -d -p 5432:5432 --name driver -e POSTGRES_PASSWORD=driver postgis/postgis
 
 Datasource URL, username and password (postgres, driver) are specified in src/main/resources/application.properties
-The PostGIS extension apparently uses up Postgres image feature for running scripts on startup, so sample database can be created by copying and executing the script manully:
+The PostGIS extension apparently uses up Postgres image feature for running scripts on startup, so sample database can be created by copying and executing the script manually:
 
 docker cp ./init/init.sql driver:/docker-entrypoint-initdb.d/init.sql
 docker exec -u postgres driver psql postgres postgres -f docker-entrypoint-initdb.d/init.sql
 
-The database contains three tables:
+The database contains four tables:
+
+status(
+    status_id serial PRIMARY KEY,
+    status_name text)
 
 driver(
     driver_id serial PRIMARY KEY,
@@ -39,7 +43,7 @@ boundary(
     boundary_name varchar,
     boundary_geometry geometry)
 
-Driver and shift tables contain sample data inserted by init.sql, while boundaries table is empty (see below)
+Driver, status and shift tables contain sample data inserted by init.sql, while boundaries table is empty (see below)
 When the application is run, Swagger UI can be accessed at:
 
 http://localhost:8080/swagger-ui/index.html
@@ -70,9 +74,9 @@ curl -X 'POST' \
   -H 'accept: */*' \
   -d ''
 
-/drivers/add - adds a driver to the database (position has to be PostGIS geometry string, I didn't have the time to change it unfortunately)
+/drivers/add - adds a driver to the database
 curl -X 'POST' \
-  'http://localhost:8080/drivers/add?name=Kim&surname=Kitsuragi&birthday=478137600000&address=---&position=SRID%3D4326%3BPOINT%2831.255739540165827%2034.78581453179752%29' \
+  'http://localhost:8080/drivers/add?name=Kim&surname=Kitsuragi&birthday=478137600000&address=---&lat=60&lon=30&srid=4326&status=3' \
   -H 'accept: */*' \
   -d ''
 
@@ -85,6 +89,12 @@ curl -X 'DELETE' \
 curl -X 'GET' \
   'http://localhost:8080/drivers/list' \
   -H 'accept: */*'
+
+/drivers/updatestatus - updates status of a driver (driver id, status id)
+curl -X 'POST' \
+  'http://localhost:8080/drivers/updatestatus?driverId=2&statusId=3' \
+  -H 'accept: */*' \
+  -d ''
 
 Boundary controller:
 
